@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 set -ex
 
@@ -6,12 +6,12 @@ HOME="${HOME:-~}"
 DIR="${HOME}/.dotfiles"
 REPO="https://github.com/mikecurtis/testdot"
 
-function fail {
+fail () {
   echo "$@" >&2
   exit 1
 }
 
-function usage {
+usage () {
   echo "$0 -h|--help -y|--yes -f|--force -S|--nosync" >&2
 }
 
@@ -41,7 +41,7 @@ if [ -z "$OS" ]; then
   fail "Unknown OS"
 fi
 
-function confirm {
+confirm () {
   ${YES} && return
   read -p "$@ " choice
   case "$choice" in
@@ -51,7 +51,7 @@ function confirm {
   esac
 }
 
-function force {
+force () {
   ${FORCE} && return
   read -p "$@ " choice
   case "$choice" in
@@ -61,12 +61,12 @@ function force {
   esac
 }
 
-function check_which {
+check_which () {
   which $1 >/dev/null 2>&1
   return $?
 }
 
-function install {
+install () {
   case "${OS}" in
   arch)
     sudo pacman --noconfirm --needed -Suy $* ||
@@ -85,7 +85,7 @@ function install {
   esac
 }
 
-function check_install {
+check_install () {
   if ! check_which $1; then
     if confirm "No $1 found.  Install?"; then
       install $1 || fail "$1 installation failed!"
@@ -96,7 +96,7 @@ function check_install {
   check_which $1 || fail "No $1 found!"
 }
 
-function check_bootstrap {
+check_bootstrap () {
   if ! [ -d "${DIR}" ]; then
     mkdir -p "${DIR}"
     git clone "${REPO}" "${DIR}"
