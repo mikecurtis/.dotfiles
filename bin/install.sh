@@ -1,6 +1,9 @@
 #!/bin/bash
 
 HOME="${HOME:-~}"
+PACKAGE=
+SCRIPT=
+CHECK_FINISH=true
 
 fail () {
   echo "$@" >&2
@@ -90,7 +93,7 @@ check_install_package () {
       fail "User aborted"
     fi
   fi
-  check_which $1 || fail "No $1 found!"
+  ${CHECK_FINISH} && ( check_which $1 || fail "No $1 found!" )
 }
 
 check_install_script () {
@@ -101,11 +104,8 @@ check_install_script () {
       fail "User aborted"
     fi
   fi
-  check_which $1 || fail "No $1 found!"
+  ${CHECK_FINISH} && ( check_which $1 || fail "No $1 found!" )
 }
-
-PACKAGE=
-SCRIPT=
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -118,6 +118,10 @@ while [[ $# -gt 0 ]]; do
     SCRIPT=$2
     shift # past argument
     shift # past value
+    ;;
+  -C)
+    CHECK_FINISH=false
+    shift # past argument
     ;;
   -h)
     usage 0
@@ -134,9 +138,9 @@ done
 
 set -- "${POSITIONAL_ARGS[@]}" # restore positional parameters
 
-[ "${PACKAGE}" -a "${SCRIPT}" ] && usage 1
-[ "${PACKAGE}" -o "S{SCRIPT}" ] || usage 1
 [ "$#" -eq 1 ] || usage 1
+[ "${PACKAGE}" -a "${SCRIPT}" ] && usage 1
+[ "${PACKAGE}" -o "S{SCRIPT}" ] || PACKAGE="$1"
 
 [ "${PACKAGE}" ] && check_install_package "$1" "${PACKAGE}"
 [ "${SCRIPT}" ] && check_install_script "$1" "${SCRIPT}"
