@@ -46,28 +46,39 @@ _build_copy target:
   rm -rf {{staging_config_dir}}/{{target}}
   cp -r {{src_dir}}/{{target}} {{staging_config_dir}}/{{target}}
 
-staging: config_starship config_tmux config_ghostty
-
 config_ghostty: (_build_copy "ghostty")
+config_mise: (_build_copy "mise")
 config_starship: (_build_copy "starship")
 config_tmux: (_build_copy "tmux")
+
+staging: config_starship config_tmux config_ghostty
 
 
 
 # Promote staging/ to dist/
 
-promote: check_dist_nodiff staging
+check_dist_nodiff:
+  #!/bin/bash
+  if [ "$(git -C {{dist_dir}} status -s)" ]; then
+    git -C {{dist_dir}} status
+    echo "Unresolved diffs in {{dist_dir}}"
+    exit 1
+  fi
+
+deploy_staging_to_dist:
+  #!/bin/bash
   find {{dist_dir}} -mindepth 1 -maxdepth 1 \! -name .git -exec rm -rf {} \;
   find {{staging_dir}} -mindepth 1 -maxdepth 1 -exec cp -r {} {{dist_dir}} \;
   git -C {{dist_dir}} add .
-  git -C {{dist_dir}} commit --allow-empty -m 'Update dist'
-
-check_dist_nodiff:
-  #!/bin/bash
-  if [ "git -C {{dist_dir}} status -s" ]; then
-    git -C {{dist_dir}} status
-    exit 1
+  if [ "$(git -C {{dist_dir}} status -s)" ]; then
+    git -C {{dist_dir}} commit -m 'Update dist'
+    echo "Deployed new version!"
+  else
+    echo "Nothing to update!"
   fi
+
+promote: check_dist_nodiff staging deploy_staging_to_dist
+
 
 
 # Install required packages
