@@ -1,0 +1,54 @@
+"$schema" = "https://starship.rs/config-schema.json"
+format = "$character $username@$hostname:$directory $git_branch$git_commit$git_metrics$git_status# "
+palette = "custom"
+
+[aws]
+disabled = true
+
+[character]
+error_symbol = "[󰔶](bold red)"
+success_symbol = "[󰔶](bold bright-white)"
+
+[directory]
+format = "[$path]($style)"
+style = "magenta"
+truncate_to_repo = false
+
+[gcloud]
+disabled = true
+
+[git_branch]
+format = "[$symbol$branch(:$remote_branch)]($style) "
+style = "bright-white"
+
+[git_metrics]
+added_style = "green"
+deleted_style = "red"
+disabled = false
+
+[git_status]
+ahead = "[⇡](yellow)"
+behind = "[⇣](yellow)"
+conflicted = "[=](red)"
+deleted = "[x](red)"
+diverged = "[⇕](red)"
+modified = "[!](yellow)"
+renamed = "[»](yellow)"
+staged = "[+](green)"
+style = "bright-white"
+untracked = "[?](yellow)"
+
+[hostname]
+format = "[$hostname]($style)"
+ssh_only = false
+style = "magenta"
+
+[palettes.custom]
+grey = "247"
+magenta = "#C839C5"
+
+[username]
+format = "[$user]($style)"
+show_always = true
+style_root = "red"
+style_user = "magenta"
