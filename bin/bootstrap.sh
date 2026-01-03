@@ -11,10 +11,6 @@ fail () {
   exit 1
 }
 
-usage () {
-  echo "$0 -h|--help -y|--yes -f|--force -S|--nosync" >&2
-}
-
 if [ -f /etc/os-release ]; then
   . /etc/os-release
   case "${ID}" in
