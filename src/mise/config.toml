@@ -1,0 +1,6 @@
+[env]
+_.file = ".env.local"
+
+[tools]
+node = "lts"
+pnpm = "latest"
