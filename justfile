@@ -1,3 +1,7 @@
+set dotenv-path := 'private/.env'
+set dotenv-load
+set dotenv-required
+
 xdg_config_dir := if env('XDG_CONFIG_HOME', '') =~ '^/' {
   env('XDG_CONFIG_HOME')
 } else {
@@ -12,9 +16,11 @@ dist_config_dir := justfile_directory() / 'dist/.config'
 staging_dir := justfile_directory() / 'staging'
 staging_config_dir := justfile_directory() / 'staging/.config'
 
-private_dir := justfile_directory() / 'private'
-
 installer := require('./bin/install.sh')
+
+private_dir := justfile_directory() / 'private'
+hostenv := private_dir / '.env'
+hostenv_gen := require('./bin/hostenv.sh')
 
 git := require('git')
 zsh := require('zsh')
@@ -36,8 +42,17 @@ init_staging:
   mkdir -p {{staging_dir}}
 
 init_private:
+  #!/bin/bash
   mkdir -p {{private_dir}}
   git -C {{private_dir}} init
+  {{hostenv_gen}} > {{hostenv}}
+  git -C {{private_dir}} add .
+  if [ "$(git -C {{private_dir}} status -s)" ]; then
+    git -C {{private_dir}} commit -m 'Update private'
+    echo "Deployed new version!"
+  else
+    echo "Nothing to update!"
+  fi
 
 init: init_dist init_staging init_private init_config
   sudo chsh -s {{zsh}} {{user}}
@@ -48,11 +63,16 @@ init: init_dist init_staging init_private init_config
 # Build staging repository
 
 _build_copy target:
-  mkdir -p {{staging_config_dir}}/{{target}}
   rm -rf {{staging_config_dir}}/{{target}}
   cp -r {{src_dir}}/{{target}} {{staging_config_dir}}/{{target}}
 
+_build_envsubst dir tmpl out:
+  rm -rf {{staging_config_dir}}/{{dir}}
+  mkdir -p {{staging_config_dir}}/{{dir}}
+  envsubst < {{src_dir}}/{{dir}}/{{tmpl}} > {{staging_config_dir}}/{{dir}}/{{out}}
+
 config_ghostty: (_build_copy "ghostty")
+config_git: (_build_envsubst "git" "config.tmpl" "config")
 config_mise: (_build_copy "mise")
 config_starship: (_build_copy "starship")
 config_tmux: (_build_copy "tmux")
@@ -60,6 +80,8 @@ config_zsh: (_build_copy "zsh")
 
 staging: \
   config_ghostty \
+  config_git \
+  config_mise \
   config_starship \
   config_tmux \
   config_zsh
@@ -76,6 +98,10 @@ check_dist_nodiff:
     exit 1
   fi
 
+diff_staging_to_dist:
+  echo "\n\n=== DIFF ===\n\n"
+  diff -ru {{dist_config_dir}} {{staging_config_dir}} | delta
+
 deploy_staging_to_dist:
   #!/bin/bash
   find {{dist_dir}} -mindepth 1 -maxdepth 1 \! -name .git -exec rm -rf {} \;
@@ -88,19 +114,15 @@ deploy_staging_to_dist:
     echo "Nothing to update!"
   fi
 
-promote: check_dist_nodiff staging deploy_staging_to_dist
+diff: check_dist_nodiff staging diff_staging_to_dist
+commit: check_dist_nodiff staging deploy_staging_to_dist
 
 
 
 # Install required packages
 
-_install_package binary package options:
-  ./bin/install.sh -p "{{package}}" {{options}} "{{binary}}"
-
-_install_script binary script options:
-  ./bin/install.sh -s "{{script}}" {{options}} "{{binary}}"
-
 packages:
+  {{installer}} -p gettext-base envsubst
   {{installer}} -p bat batcat
   {{installer}} -p git-delta delta
   {{installer}} eza
@@ -117,5 +139,6 @@ packages:
 
 
 
-# Default
-build: promote packages
+# Top-level commands
+build: init packages commit
+
