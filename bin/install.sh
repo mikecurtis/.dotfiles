@@ -140,7 +140,7 @@ set -- "${POSITIONAL_ARGS[@]}" # restore positional parameters
 
 [ "$#" -eq 1 ] || usage 1
 [ "${PACKAGE}" -a "${SCRIPT}" ] && usage 1
-[ "${PACKAGE}" -o "S{SCRIPT}" ] || PACKAGE="$1"
+[ "${PACKAGE}" -o "${SCRIPT}" ] || PACKAGE="$1"
 
 [ "${PACKAGE}" ] && check_install_package "$1" "${PACKAGE}"
 [ "${SCRIPT}" ] && check_install_script "$1" "${SCRIPT}"
