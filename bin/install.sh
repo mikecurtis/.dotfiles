@@ -3,6 +3,7 @@
 HOME="${HOME:-~}"
 PACKAGE=
 SCRIPT=
+CHECK_WHICH=true
 CHECK_FINISH=true
 
 fail () {
@@ -62,6 +63,7 @@ force () {
 }
 
 check_which () {
+  ${CHECK_WHICH} || return 0
   which $1 >/dev/null 2>&1
   return $?
 }
@@ -119,8 +121,12 @@ while [[ $# -gt 0 ]]; do
     shift # past argument
     shift # past value
     ;;
-  -C)
+  -F)
     CHECK_FINISH=false
+    shift # past argument
+    ;;
+  -W)
+    CHECK_WHICH=false
     shift # past argument
     ;;
   -h)

@@ -14,17 +14,19 @@ staging_config_dir := justfile_directory() / 'staging/.config'
 
 private_dir := justfile_directory() / 'private'
 
+installer := require('./bin/install.sh')
+
 git := require('git')
+zsh := require('zsh')
+user := env('USER')
 
 
 
 # Initialize
 
-init: init_dist init_staging init_private init_config
-
 init_config: init_dist
   mkdir -p {{dist_config_dir}}
-  ln -s {{dist_config_dir}} {{xdg_config_dir}}
+  ln -sf {{dist_config_dir}} {{xdg_config_dir}}
 
 init_dist:
   mkdir -p {{dist_dir}}
@@ -36,6 +38,10 @@ init_staging:
 init_private:
   mkdir -p {{private_dir}}
   git -C {{private_dir}} init
+
+init: init_dist init_staging init_private init_config
+  sudo chsh -s {{zsh}} {{user}}
+  ln -sf {{xdg_config_dir}}/zsh/.zshrc {{home_directory()}}/.zshrc
 
 
 
@@ -50,8 +56,13 @@ config_ghostty: (_build_copy "ghostty")
 config_mise: (_build_copy "mise")
 config_starship: (_build_copy "starship")
 config_tmux: (_build_copy "tmux")
+config_zsh: (_build_copy "zsh")
 
-staging: config_starship config_tmux config_ghostty
+staging: \
+  config_ghostty \
+  config_starship \
+  config_tmux \
+  config_zsh
 
 
 
@@ -83,12 +94,28 @@ promote: check_dist_nodiff staging deploy_staging_to_dist
 
 # Install required packages
 
-_install_package binary package:
-  ./bin/install.sh -p "{{package}}" "{{binary}}"
+_install_package binary package options:
+  ./bin/install.sh -p "{{package}}" {{options}} "{{binary}}"
 
-_install_script binary script:
-  ./bin/install.sh -s "{{script}}" "{{binary}}"
+_install_script binary script options:
+  ./bin/install.sh -s "{{script}}" {{options}} "{{binary}}"
 
-package_tmux: (_install_package "tmux" "tmux")
+packages:
+  {{installer}} -p bat batcat
+  {{installer}} -p git-delta delta
+  {{installer}} eza
+  {{installer}} -W fonts-jetbrains-mono
+  {{installer}} fzf
+  {{installer}} gh
+  {{installer}} man
+  {{installer}} -s "https://mise.run" -F mise
+  {{installer}} -p neovim nvim
+  {{installer}} -p ripgrep rg
+  {{installer}} starship
+  {{installer}} tmux
+  {{installer}} zsh
 
-install_packages: package_tmux
+
+
+# Default
+build: promote packages
