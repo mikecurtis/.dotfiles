@@ -47,6 +47,8 @@ fi
 
 source <(mise activate zsh)
 
+export GH_CONFIG_DIR="${HOME}/.local/share/gh"
+
 ( [ "$TERM" = "xterm-ghostty" ] || [ "$TERM_PROGRAM" = "ghostty" ] ) && ! $(which ghostty >/dev/null 2>&1) && export TERM=xterm-256color
 
 alias -- bat=batcat
