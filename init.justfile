@@ -24,7 +24,7 @@ user := env('USER')
 # Initialize
 
 init: init_dist init_staging init_private init_config
-  sudo chsh -s {{zsh}} {{user}}
+  chsh -s {{zsh}} {{user}}
   ln -sf {{xdg_config_dir}}/zsh/.zshrc {{home_directory()}}/.zshrc
 
 init_dist:
