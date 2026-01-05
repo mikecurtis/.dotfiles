@@ -96,6 +96,23 @@ else
 fi
 
 
+# ssh with tmux tunneling.  Should only be used on trusted destinations.
+function tsh {
+  [ "${TMUX}" ] || ( echo "No \${TMUX} found" ; return 1 )
+  local localSocket="$(echo $TMUX | cut -d ',' -f1)"
+  local remoteSocket="/tmp/tmux.remote.$(date +'%s')"
+  # Minor optimization.  See notes in .zshrc
+  local titleHint="$(tmux display-message -p '#{window_name}')"
+
+  # Note that \$SHELL is escaped to be evaluated in the remote environment.
+  ssh -t -R "${remoteSocket}:${localSocket}" "$@" \
+    "export TMUX=\"${remoteSocket}\"; \
+    export TMUX_TITLE_HINT="${titleHint}" ; \
+    trap \"rm ${remoteSocket}\" EXIT; \
+    exec \$SHELL -l"
+}
+
+
 # Set tmux window titles to match user, host, and (optionally) directory.
 # This must be done from within the shell because tmux only sees the parent
 # shell, and we may be within ssh or a subshell.
@@ -122,7 +139,7 @@ if [ "${TMUX}" ]; then
   # Connect to the user@host if it doesn't match the current.
   if [ \( "${user}" -a "${hostname}" \) -a \( \( "${user}" != "${USER}" \) -o \( "${hostname}" != "${HOSTNAME}" \) \) ]; then
     echo "Connecting ${user}@${hostname}"
-    exec bash -c "ssh ${user}@${hostname} || (echo Failed to connect >&2 && sleep 3)"
+    exec tsh "${user}@${hostname}"
   fi
 
   # Navigate to the directory, if specified.
@@ -159,18 +176,3 @@ if [ "${TMUX}" ]; then
   bindkey '^Z' _ctrl_z_handler
 
 fi
-
-# ssh with tmux tunneling.  Should only be used on trusted destinations.
-function tsh {
-  LOCAL="$(echo $TMUX | cut -d ',' -f1)"
-  REMOTE="/tmp/tmux.remote.$(date +'%s')"
-  # Minor optimization.  See notes in .zshrc
-  TMUX_TITLE_HINT="$(tmux display-message -p '#{window_name}')"
-
-  # Note that \$SHELL is escaped to be evaluated in the remote environment.
-  ssh -t -R "${REMOTE}:${LOCAL}" "$@" \
-    "export TMUX=\"${REMOTE}\"; \
-    export TMUX_TITLE_HINT="${TMUX_TITLE_HINT}" ; \
-    trap \"rm ${REMOTE}\" EXIT; \
-    exec \$SHELL -l"
-}
