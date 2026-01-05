@@ -108,6 +108,7 @@ function tsh {
   ssh -t -R "${remoteSocket}:${localSocket}" "$@" \
     "export TMUX=\"${remoteSocket}\"; \
     export TMUX_TITLE_HINT="${titleHint}" ; \
+    export FROM_TSH=true ; \
     trap \"rm ${remoteSocket}\" EXIT; \
     exec \$SHELL -l"
 }
@@ -137,9 +138,11 @@ if [ "${TMUX}" ]; then
   fi
 
   # Connect to the user@host if it doesn't match the current.
-  if [ \( "${user}" -a "${hostname}" \) -a \( \( "${user}" != "${USER}" \) -o \( "${hostname}" != "${HOSTNAME}" \) \) ]; then
-    echo "Connecting ${user}@${hostname}"
-    exec tsh "${user}@${hostname}"
+  if ! [ "${FROM_TSH}" ]; then
+    if [ \( "${user}" -a "${hostname}" \) -a \( \( "${user}" != "${USER}" \) -o \( "${hostname}" != "${HOSTNAME}" \) \) ]; then
+      echo "Connecting ${user}@${hostname}"
+      exec tsh "${user}@${hostname}"
+    fi
   fi
 
   # Navigate to the directory, if specified.
