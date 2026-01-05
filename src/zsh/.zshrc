@@ -58,7 +58,7 @@ export GH_CONFIG_DIR="${HOME}/.local/share/gh"
 alias -- bat=batcat
 alias -- cat=bat
 alias -- hmc="cd ${DOTFILE_DIR}"
-alias -- hms="(pushd ${DOTFILE_DIR} && git pull && just build && popd && exec ${SHELL})"
+alias -- hms="(pushd ${DOTFILE_DIR} && git pull && just build && popd) && exec ${SHELL}"
 alias -- la='eza -a'
 alias -- ll='eza -l'
 alias -- lla='eza -la'
@@ -67,6 +67,33 @@ alias -- lt='eza --tree'
 alias -- tm='tmux list-sessions > /dev/null 2>&1 && tmux a || tmux'
 alias -- view='nvim -R'
 alias -- vimdiff='nvim -d'%
+
+
+# Auto-start the ssh agent and add default keys
+SSH_ENV="$HOME/.ssh/environment"
+
+function start_agent {
+    echo "Initializing new SSH agent..."
+    # Create an environment file with safe permissions
+    touch "$SSH_ENV"
+    chmod 600 "${SSH_ENV}"
+    # Start the agent and output the env variables to the file
+    /usr/bin/ssh-agent | sed 's/^echo/#echo/' >> "${SSH_ENV}"
+    . "${SSH_ENV}" > /dev/null
+    # Add default keys (id_rsa, id_ecdsa, etc.)
+    ssh-add
+}
+
+# Source SSH settings, if applicable
+if [ -f "${SSH_ENV}" ]; then
+    . "${SSH_ENV}" > /dev/null
+    # Check if the stored agent process is still running
+    kill -0 $SSH_AGENT_PID 2>/dev/null || {
+        start_agent
+    }
+else
+    start_agent
+fi
 
 
 # Set tmux window titles to match user, host, and (optionally) directory.
