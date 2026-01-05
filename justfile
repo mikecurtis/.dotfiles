@@ -30,6 +30,7 @@ user := env('USER')
 
 # Top-level commands
 
+default: commit
 build: init packages commit
 
 
