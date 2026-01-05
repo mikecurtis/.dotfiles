@@ -1,8 +1,9 @@
 export USER="${USER:-$(whoami)}"
 export HOME="${HOME:-~}"
+export HOSTNAME="${HOSTNAME:-$(cat /etc/hostname)}"
 
 export PATH="${PATH}:${HOME}/.local/bin"
-DOTFILE_DIR="${HOME}/.dotfiles"
+export DOTFILE_DIR="${HOME}/.dotfiles"
 
 typeset -U path cdpath fpath manpath
 autoload -U compinit && compinit
@@ -66,3 +67,63 @@ alias -- lt='eza --tree'
 alias -- tm='tmux list-sessions > /dev/null 2>&1 && tmux a || tmux'
 alias -- view='nvim -R'
 alias -- vimdiff='nvim -d'%
+
+
+# Set tmux window titles to match user, host, and (optionally) directory.
+# This must be done from within the shell because tmux only sees the parent
+# shell, and we may be within ssh or a subshell.
+if [ "${TMUX}" ]; then
+
+  local name="$(tmux display-message -p "#{window_name}" 2>/dev/null)"
+  local user=""
+  local hostname=""
+  local directory=""
+  if [ "${name}" ]; then
+    IFS="@" read -r user dest <<< "${name}"
+    IFS=":" read -r hostname directory <<< "${dest}"
+  fi
+
+  # Connect to the user@host if it doesn't match the current.
+  if [ \( "${user}" -a "${hostname}" \) -a \( \( "${user}" != "${USER}" \) -o \( "${hostname}" != "${HOSTNAME}" \) \) ]; then
+    echo "Connecting ${user}@${hostname}"
+    exec bash -c "ssh ${user}@${hostname} || (echo Failed to connect >&2 && sleep 3)"
+  fi
+
+  # Navigate to the directory, if specified.
+  if [ "${directory}" ]; then
+    cd "${directory}"
+  fi
+
+  # Let ctrl-z communicate with the shell to update the current state and/or
+  # enable/disable directory updates.
+  ctrl_z_handler() {
+    local with="${USER}@${HOSTNAME}:$(pwd)"
+    local without="${USER}@${HOSTNAME}"
+    local name="$(tmux display-message -p "#{window_name}" 2>/dev/null)"
+    IFS="@" read -r user dest <<< "${name}"
+    IFS=":" read -r hostname directory <<< "${dest}"
+    # If the current state matches, toggle between directory mode and
+    # non-directory mode.  Otherwise, update the current state within the
+    # current mode.
+    if [ "${directory}" ]; then
+      if [ "${with}" = "${name}" ]; then
+	echo a $name
+        tmux rename-window "${without}"
+      else
+	echo b $name
+	tmux rename-window "${with}"
+      fi
+    else
+      if [ "${without}" = "${name}" ]; then
+	echo c $name
+        tmux rename-window "${with}"
+      else
+	echo d $name
+	tmux rename-window "${without}"
+      fi
+    fi
+  }
+  zle -N ctrl_z_handler
+  bindkey '^Z' ctrl_z_handler
+
+fi
