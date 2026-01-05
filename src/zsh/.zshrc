@@ -1,6 +1,7 @@
 export USER="${USER:-$(whoami)}"
 export HOME="${HOME:-~}"
-export HOSTNAME="${HOSTNAME:-$(cat /etc/hostname)}"
+export HOSTNAME="${HOSTNAME:-$(hostname 2>/dev/null)}"
+export HOSTNAME="${HOSTNAME:-$(cat /etc/hostname 2>/dev/null)}"
 
 export PATH="${PATH}:${HOME}/.local/bin"
 export DOTFILE_DIR="${HOME}/.dotfiles"
