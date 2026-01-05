@@ -15,10 +15,11 @@ private_dir := justfile_directory() / 'private'
 hostenv_gen := require('./bin/hostenv.sh')
 hostenv := private_dir / '.env'
 
-getent := require('getent')
 git := require('git')
 zsh := require('zsh')
 user := env('USER')
+
+os := os()
 
 
 
@@ -26,7 +27,13 @@ user := env('USER')
 
 init: init_dist init_staging init_private init_config
   #!/bin/bash
-  if [ "$(getent passwd "$USER" | cut -d: -f7 | awk -F/ '{print $NF}')" != "zsh" ]; then
+  shell=""
+  if [ "{{os}}" = "macos" ]; then
+    shell="$(dscl . -read /Users/${USER} UserShell | awk '{print $2}' | awk -F/ '{print $NF}')"
+  else
+    shell="$(grep "^${USER}:" /etc/passwd | cut -d: -f7 | awk -F/ '{print $NF}')"
+  fi
+  if [ "${shell}" != "zsh" ]; then
     if sudo true 2>/dev/null; then
       sudo chsh -s {{zsh}} {{user}} || ( echo "Failed to sudo chsh" ; exit 1 )
     else
