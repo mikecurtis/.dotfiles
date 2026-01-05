@@ -56,8 +56,6 @@ export GH_CONFIG_DIR="${HOME}/.local/share/gh"
 
 ( [ "$TERM" = "xterm-ghostty" ] || [ "$TERM_PROGRAM" = "ghostty" ] ) && ! $(which ghostty >/dev/null 2>&1) && export TERM=xterm-256color
 
-alias -- bat=batcat
-alias -- cat=bat
 alias -- hmc="cd ${DOTFILE_DIR}"
 alias -- hms="(pushd ${DOTFILE_DIR} && git pull && just build && popd) && exec ${SHELL}"
 alias -- la='eza -a'
