@@ -74,7 +74,16 @@ alias -- vimdiff='nvim -d'%
 # shell, and we may be within ssh or a subshell.
 if [ "${TMUX}" ]; then
 
-  local name="$(tmux display-message -p "#{window_name}" 2>/dev/null)"
+  local name=""
+  # Optimization: If this is a remote session using a tunnel back to tmux, save
+  # ~150ms on initial load by taking initial value directly from client
+  # environment variable rather than making a callback.
+  if [ "${TMUX_TITLE_HINT}" ]; then
+    name="${TMUX_TITLE_HINT}"
+    unset TMUX_TITLE_HINT
+  else
+    name="$(tmux display-message -p "#{window_name}" 2>/dev/null)"
+  fi
   local user=""
   local hostname=""
   local directory=""
@@ -96,7 +105,7 @@ if [ "${TMUX}" ]; then
 
   # Let ctrl-z communicate with the shell to update the current state and/or
   # enable/disable directory updates.
-  ctrl_z_handler() {
+  _ctrl_z_handler() {
     local with="${USER}@${HOSTNAME}:$(pwd)"
     local without="${USER}@${HOSTNAME}"
     local name="$(tmux display-message -p "#{window_name}" 2>/dev/null)"
@@ -119,7 +128,22 @@ if [ "${TMUX}" ]; then
       fi
     fi
   }
-  zle -N ctrl_z_handler
-  bindkey '^Z' ctrl_z_handler
+  zle -N _ctrl_z_handler
+  bindkey '^Z' _ctrl_z_handler
 
 fi
+
+# ssh with tmux tunneling.  Should only be used on trusted destinations.
+function tsh {
+  LOCAL="$(echo $TMUX | cut -d ',' -f1)"
+  REMOTE="/tmp/tmux.remote.$(date +'%s')"
+  # Minor optimization.  See notes in .zshrc
+  TMUX_TITLE_HINT="$(tmux display-message -p '#{window_name}')"
+
+  # Note that \$SHELL is escaped to be evaluated in the remote environment.
+  ssh -t -R "${REMOTE}:${LOCAL}" "$@" \
+    "export TMUX=\"${REMOTE}\"; \
+    export TMUX_TITLE_HINT="${TMUX_TITLE_HINT}" ; \
+    trap \"rm ${REMOTE}\" EXIT; \
+    exec \$SHELL -l"
+}
