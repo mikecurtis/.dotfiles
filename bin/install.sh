@@ -5,6 +5,7 @@ PACKAGE=
 SCRIPT=
 CHECK_WHICH=true
 CHECK_FINISH=true
+BREWUSER="brewdog"
 
 fail () {
   echo "$@" >&2
@@ -80,9 +81,14 @@ install_package () {
       fail "apt install failed"
     ;;
   macos)
-    brew update &&
-      brew install $* ||
-      fail "brew install failed"
+    if [ "${BREWUSER}" ]; then
+      su ${BREWUSER} -c "brew update && brew install $*" ||
+        fail "brew install failed"
+    else
+      brew update &&
+        brew install $* ||
+        fail "brew install failed"
+    fi
     ;;
   esac
 }

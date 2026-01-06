@@ -5,6 +5,7 @@ set -ex
 HOME="${HOME:-~}"
 DIR="${HOME}/.dotfiles"
 REPO="https://github.com/mikecurtis/testdot"
+BREWUSER="brewdog"
 
 fail () {
   echo "$@" >&2
@@ -74,9 +75,14 @@ install () {
       fail "apt install failed"
     ;;
   macos)
-    brew update &&
-      brew install $* ||
-      fail "brew install failed"
+    if [ "${BREWUSER}" ]; then
+      su ${BREWUSER} -c "brew update && brew install $*" ||
+        fail "brew install failed"
+    else
+      brew update &&
+        brew install $* ||
+        fail "brew install failed"
+    fi
     ;;
   esac
 }
