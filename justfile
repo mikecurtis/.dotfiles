@@ -7,6 +7,7 @@ xdg_config_dir := if env('XDG_CONFIG_HOME', '') =~ '^/' {
 } else {
   home_directory() / '.config'
 }
+export XDG_CONFIG_HOME := xdg_config_dir
 
 src_dir := justfile_directory() / 'src'
 
@@ -64,8 +65,9 @@ packages:
 
 # Build staging repository
 
-_build_copy target:
-  cp -r {{src_dir}}/{{target}} {{staging_config_dir}}/{{target}}
+_build_copy dir file:
+  mkdir -p {{staging_config_dir}}/{{dir}}
+  cat {{src_dir}}/{{dir}}/{{file}} > {{staging_config_dir}}/{{dir}}/{{file}}
 
 _build_envsubst dir tmpl out:
   mkdir -p {{staging_config_dir}}/{{dir}}
@@ -75,12 +77,13 @@ reset_staging:
   rm -rf {{staging_dir}}
   mkdir -p {{staging_config_dir}}
 
-config_ghostty: (_build_copy "ghostty")
-config_git: (_build_envsubst "git" "config.tmpl" "config")
-config_mise: (_build_copy "mise")
-config_starship: (_build_copy "starship")
-config_tmux: (_build_copy "tmux")
-config_zsh: (_build_copy "zsh")
+config_ghostty: (_build_copy "ghostty" "config")
+config_git: (_build_envsubst "git" "config.tmpl" "config") \
+            (_build_copy "git" "gitignore")
+config_mise: (_build_copy "mise" "config.toml")
+config_starship: (_build_copy "starship" "starship.toml")
+config_tmux: (_build_copy "tmux" "tmux.conf")
+config_zsh: (_build_copy "zsh" ".zshrc")
 
 staging: \
   reset_staging \

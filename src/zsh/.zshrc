@@ -1,5 +1,6 @@
 export USER="${USER:-$(whoami)}"
 export HOME="${HOME:-~}"
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-${HOME}/.config}"
 export HOSTNAME="${HOSTNAME:-$(hostname 2>/dev/null)}"
 export HOSTNAME="${HOSTNAME:-$(cat /etc/hostname 2>/dev/null)}"
 
