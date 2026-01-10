@@ -41,7 +41,9 @@ init: init_dist init_staging init_private init_config
     fi
   fi
   ln -sf {{xdg_config_dir}}/zsh/.zshrc {{home_directory()}}/.zshrc || \
-    ( echo "Failed to ln -sf" .zshrc ; exit 1 )
+    ( echo "Failed to ln -sf .zshrc" ; exit 1 )
+  mkdir -p {{home_directory()}}/.ssh || \
+    ( echo "Failed to create .ssh" ; exit 1 )
 
 init_dist:
   mkdir -p {{dist_dir}}
